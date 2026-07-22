@@ -1,26 +1,33 @@
 @import "tailwindcss";
 
+/* The Shoe Company brand palette — black · gold · cream */
+@theme {
+  --color-cream: #eae6df;
+  --color-cream-dark: #ded9cf;
+  --color-gold: #c0a15e;
+  --color-gold-dark: #a9884a;
+  --color-ink: #141414;
+  --color-ink-soft: #4a4a4a;
+  --color-card: #ffffff;
+
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Brand wordmark styling */
+.wordmark {
+  font-family: var(--font-serif);
+  letter-spacing: 0.18em;
+  font-weight: 700;
 }

@@ -1,0 +1,34 @@
+// The Shoe Company — inventory schema (MongoDB)
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// One document per footwear item. The `code` is what you type/scan to look it
+// up. Sizes are embedded inside the document (see SizeStock below), so a shoe
+// and its stock live together and are deleted together.
+model Footwear {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  code         String      @unique // e.g. "SPT-115" — the lookup key
+  name         String
+  category     String // Ladies | Gents | Slipper | Chappal | Formal | Casual | Sports
+  genderGroup  String? // optional: Ladies | Gents | Kids
+  sellingPrice Int // whole rupees, e.g. 2499
+  imageUrl     String? // link to the photo (stored in cloud, not in the DB)
+  description  String? // optional
+  sizes        SizeStock[] // embedded stock-per-size list
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// Embedded document: one size (6–11) and its stock quantity.
+type SizeStock {
+  size     Int // 6, 7, 8, 9, 10, 11
+  quantity Int
+}
