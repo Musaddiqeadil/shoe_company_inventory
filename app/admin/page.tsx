@@ -1,7 +1,7 @@
 import Link from "next/link";
 import FootwearImage from "@/components/FootwearImage";
-import { getAllFootwear, totalStock } from "@/lib/data";
-import { formatPrice } from "@/lib/constants";
+import { getAllFootwear } from "@/lib/data";
+import { formatPrice, totalStock } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 

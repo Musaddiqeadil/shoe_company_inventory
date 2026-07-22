@@ -1,7 +1,6 @@
 import { saveFootwear } from "@/app/admin/actions";
 import ImageUpload from "@/components/ImageUpload";
-import { CATEGORIES, GENDER_GROUPS, SIZES } from "@/lib/constants";
-import { sizeMap } from "@/lib/data";
+import { CATEGORIES, GENDER_GROUPS, SIZES, sizeMap } from "@/lib/constants";
 
 type ExistingItem = {
   code: string;

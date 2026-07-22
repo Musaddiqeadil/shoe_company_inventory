@@ -1,8 +1,8 @@
 import Link from "next/link";
 import FootwearImage from "@/components/FootwearImage";
 import SizeRow from "@/components/SizeRow";
-import { getFootwearByCode, normalizeCode, totalStock } from "@/lib/data";
-import { categorySlug, formatPrice } from "@/lib/constants";
+import { getFootwearByCode } from "@/lib/data";
+import { categorySlug, formatPrice, normalizeCode, totalStock } from "@/lib/constants";
 
 export default async function ItemPage({
   params,

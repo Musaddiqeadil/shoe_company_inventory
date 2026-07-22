@@ -1,7 +1,6 @@
 import Link from "next/link";
 import FootwearImage from "@/components/FootwearImage";
-import { formatPrice } from "@/lib/constants";
-import { totalStock } from "@/lib/data";
+import { formatPrice, totalStock } from "@/lib/constants";
 
 type CardItem = {
   code: string;

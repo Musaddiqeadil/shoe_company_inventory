@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { normalizeCode } from "@/lib/data";
-import { CATEGORIES, SIZES, categorySlug } from "@/lib/constants";
+import { CATEGORIES, SIZES, categorySlug, normalizeCode } from "@/lib/constants";
 
 function toInt(value: FormDataEntryValue | null): number {
   const n = parseInt(String(value ?? "").trim(), 10);

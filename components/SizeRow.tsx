@@ -1,5 +1,4 @@
-import { SIZES } from "@/lib/constants";
-import { sizeMap } from "@/lib/data";
+import { SIZES, sizeMap } from "@/lib/constants";
 
 // Displays sizes 6–11 with their stock. Out-of-stock (qty 0) sizes are greyed
 // and labelled "out"; available sizes show the quantity.
