@@ -8,6 +8,8 @@ type ExistingItem = {
   category: string;
   genderGroup: string | null;
   sellingPrice: number;
+  purchasePrice: number | null;
+  lastSellingPrice: number | null;
   imageUrl: string | null;
   description: string | null;
   sizes: { size: number; quantity: number }[];
@@ -102,6 +104,34 @@ export default function FootwearForm({ item }: { item?: ExistingItem }) {
             required
             defaultValue={item?.sellingPrice}
             placeholder="e.g. 2499"
+            className={field}
+          />
+        </div>
+        <div>
+          <label className={label} htmlFor="purchasePrice">
+            Purchase price (₹)
+          </label>
+          <input
+            id="purchasePrice"
+            name="purchasePrice"
+            type="number"
+            min={0}
+            defaultValue={item?.purchasePrice ?? ""}
+            placeholder="what you paid (cost)"
+            className={field}
+          />
+        </div>
+        <div>
+          <label className={label} htmlFor="lastSellingPrice">
+            Last selling price (₹)
+          </label>
+          <input
+            id="lastSellingPrice"
+            name="lastSellingPrice"
+            type="number"
+            min={0}
+            defaultValue={item?.lastSellingPrice ?? ""}
+            placeholder="price it last sold at"
             className={field}
           />
         </div>

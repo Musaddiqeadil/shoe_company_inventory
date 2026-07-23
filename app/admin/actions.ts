@@ -10,6 +10,14 @@ function toInt(value: FormDataEntryValue | null): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+// For optional price fields: blank -> null, otherwise the number.
+function toIntOrNull(value: FormDataEntryValue | null): number | null {
+  const raw = String(value ?? "").trim();
+  if (raw === "") return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 // Create a new footwear item or update an existing one (matched by code).
 // Sizes are stored as an embedded list on the document. Called from the add
 // and edit forms.
@@ -21,6 +29,8 @@ export async function saveFootwear(formData: FormData) {
   const description = String(formData.get("description") ?? "").trim();
   const imageUrl = String(formData.get("imageUrl") ?? "").trim();
   const sellingPrice = toInt(formData.get("sellingPrice"));
+  const purchasePrice = toIntOrNull(formData.get("purchasePrice"));
+  const lastSellingPrice = toIntOrNull(formData.get("lastSellingPrice"));
 
   if (!code) throw new Error("Code is required.");
   if (!name) throw new Error("Name is required.");
@@ -41,6 +51,8 @@ export async function saveFootwear(formData: FormData) {
     description: description || null,
     imageUrl: imageUrl || null,
     sellingPrice,
+    purchasePrice,
+    lastSellingPrice,
     sizes,
   };
 

@@ -17,10 +17,12 @@ model Footwear {
   id           String      @id @default(auto()) @map("_id") @db.ObjectId
   code         String      @unique // e.g. "SPT-115" — the lookup key
   name         String
-  category     String // Ladies | Gents | Slipper | Chappal | Formal | Casual | Sports
-  genderGroup  String? // optional: Ladies | Gents | Kids
-  sellingPrice Int // whole rupees, e.g. 2499
-  imageUrl     String? // link to the photo (stored in cloud, not in the DB)
+  category         String // Ladies | Gents | Slipper | Chappal | Formal | Casual | Sports
+  genderGroup      String? // optional: Ladies | Gents | Kids
+  sellingPrice     Int // current price to the customer, whole rupees e.g. 2499
+  purchasePrice    Int? // what the shop paid (cost) — optional, internal
+  lastSellingPrice Int? // the price it last sold at — optional
+  imageUrl         String? // link to the photo (stored in cloud, not in the DB)
   description  String? // optional
   sizes        SizeStock[] // embedded stock-per-size list
   createdAt    DateTime    @default(now())

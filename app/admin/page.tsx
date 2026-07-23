@@ -62,6 +62,11 @@ export default async function AdminPage() {
                           · {stock > 0 ? `${stock} in stock` : "Out of stock"}
                         </span>
                       </p>
+                      {item.purchasePrice != null && (
+                        <p className="text-xs text-ink-soft">
+                          Cost {formatPrice(item.purchasePrice)}
+                        </p>
+                      )}
                     </div>
                     <span className="shrink-0 text-sm text-gold-dark">Edit</span>
                   </Link>
@@ -79,6 +84,7 @@ export default async function AdminPage() {
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Category</th>
                 <th className="px-4 py-3">Price</th>
+                <th className="px-4 py-3">Cost</th>
                 <th className="px-4 py-3">Stock</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -109,6 +115,11 @@ export default async function AdminPage() {
                     </td>
                     <td className="px-4 py-3 text-ink">
                       {formatPrice(item.sellingPrice)}
+                    </td>
+                    <td className="px-4 py-3 text-ink-soft">
+                      {item.purchasePrice != null
+                        ? formatPrice(item.purchasePrice)
+                        : "—"}
                     </td>
                     <td
                       className={

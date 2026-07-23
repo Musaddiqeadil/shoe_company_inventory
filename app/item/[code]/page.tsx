@@ -72,6 +72,27 @@ export default async function ItemPage({
             {formatPrice(item.sellingPrice)}
           </p>
 
+          {(item.purchasePrice != null || item.lastSellingPrice != null) && (
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-soft">
+              {item.purchasePrice != null && (
+                <span>
+                  Purchase price:{" "}
+                  <span className="font-medium text-ink">
+                    {formatPrice(item.purchasePrice)}
+                  </span>
+                </span>
+              )}
+              {item.lastSellingPrice != null && (
+                <span>
+                  Last sold at:{" "}
+                  <span className="font-medium text-ink">
+                    {formatPrice(item.lastSellingPrice)}
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
+
           {item.description && (
             <p className="text-ink-soft">{item.description}</p>
           )}
