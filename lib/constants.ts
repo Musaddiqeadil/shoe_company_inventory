@@ -14,8 +14,9 @@ export type Category = (typeof CATEGORIES)[number];
 // Optional grouping shown as a small tag.
 export const GENDER_GROUPS = ["Ladies", "Gents", "Kids"] as const;
 
-// Shoe sizes stocked in the shop (UK/India whole numbers).
-export const SIZES = [6, 7, 8, 9, 10, 11] as const;
+// Shoe sizes stocked in the shop (UK/India whole numbers). Starts at 1 for
+// kids' footwear and runs to 12.
+export const SIZES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
 // URL-safe slug for a category, e.g. "Slipper" -> "slipper".
 export function categorySlug(category: string) {

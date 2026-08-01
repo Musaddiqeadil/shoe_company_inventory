@@ -41,3 +41,11 @@ export async function getAllSales(limit = 100) {
     take: limit,
   });
 }
+
+// Every sale, for the month-by-month totals. No limit — the monthly page has
+// to add up the whole history, not just the recent page of it.
+export async function getSalesForReport() {
+  return prisma.sale.findMany({
+    orderBy: [{ soldAt: "desc" }, { createdAt: "desc" }],
+  });
+}

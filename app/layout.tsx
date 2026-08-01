@@ -42,27 +42,33 @@ export default function RootLayout({
 function SiteHeader() {
   return (
     <header className="bg-ink text-cream border-b-4 border-gold">
-      <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-baseline gap-1.5 sm:gap-2">
-          <span className="wordmark text-base sm:text-xl text-cream">
+      {/* On a narrow phone the wordmark shrinks, its letter-spacing tightens
+          and "Manage stock" becomes "Stock", so the bar always fits one row. */}
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between gap-2">
+        <Link
+          href="/"
+          className="flex min-w-0 items-baseline gap-1 sm:gap-2 whitespace-nowrap"
+        >
+          <span className="wordmark text-sm tracking-[0.08em] text-cream sm:text-xl sm:tracking-[0.18em]">
             THE SHOE
           </span>
-          <span className="wordmark text-base sm:text-xl text-gold">
+          <span className="wordmark text-sm tracking-[0.08em] text-gold sm:text-xl sm:tracking-[0.18em]">
             COMPANY
           </span>
         </Link>
-        <nav className="flex items-center gap-4 sm:gap-5">
+        <nav className="flex shrink-0 items-center gap-3 sm:gap-5">
           <Link
             href="/sales"
-            className="text-sm text-cream/80 hover:text-gold transition-colors"
+            className="text-xs sm:text-sm text-cream/80 hover:text-gold transition-colors"
           >
-            Sales
+            Sold
           </Link>
           <Link
             href="/admin"
-            className="text-sm text-cream/80 hover:text-gold transition-colors"
+            className="text-xs sm:text-sm text-cream/80 hover:text-gold transition-colors"
           >
-            Manage stock
+            <span className="sm:hidden">Stock</span>
+            <span className="hidden sm:inline">Manage stock</span>
           </Link>
         </nav>
       </div>

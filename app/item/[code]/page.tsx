@@ -1,7 +1,6 @@
 import Link from "next/link";
-import FootwearImage from "@/components/FootwearImage";
+import CostReveal from "@/components/CostReveal";
 import SizeRow from "@/components/SizeRow";
-import SellPanel from "@/components/SellPanel";
 import { getFootwearByCode } from "@/lib/data";
 import { categorySlug, formatPrice, normalizeCode, totalStock } from "@/lib/constants";
 
@@ -42,11 +41,8 @@ export default async function ItemPage({
       </Link>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <FootwearImage
-          src={item.imageUrl}
-          alt={item.name}
-          className="aspect-square w-full rounded-2xl border border-cream-dark bg-card"
-        />
+        {/* Tap the photo 7 times to see the purchase price for 5 seconds. */}
+        <CostReveal src={item.imageUrl} alt={item.name} code={item.code} />
 
         <div className="space-y-4">
           <div>
@@ -74,25 +70,13 @@ export default async function ItemPage({
             {formatPrice(item.sellingPrice)}
           </p>
 
-          {(item.purchasePrice != null || item.lastSellingPrice != null) && (
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-soft">
-              {item.purchasePrice != null && (
-                <span>
-                  Purchase price:{" "}
-                  <span className="font-medium text-ink">
-                    {formatPrice(item.purchasePrice)}
-                  </span>
-                </span>
-              )}
-              {item.lastSellingPrice != null && (
-                <span>
-                  Last sold at:{" "}
-                  <span className="font-medium text-ink">
-                    {formatPrice(item.lastSellingPrice)}
-                  </span>
-                </span>
-              )}
-            </div>
+          {item.lastSellingPrice != null && (
+            <p className="text-sm text-ink-soft">
+              Last sold at:{" "}
+              <span className="font-medium text-ink">
+                {formatPrice(item.lastSellingPrice)}
+              </span>
+            </p>
           )}
 
           {item.description && (
@@ -109,11 +93,16 @@ export default async function ItemPage({
             <SizeRow sizes={item.sizes} />
           </div>
 
-          <SellPanel
-            code={item.code}
-            sellingPrice={item.sellingPrice}
-            sizes={item.sizes}
-          />
+          {stock > 0 ? (
+            <Link
+              href={`/sell/${encodeURIComponent(item.code)}`}
+              className="inline-block rounded-lg bg-ink px-6 py-2.5 font-semibold text-cream hover:bg-ink-soft"
+            >
+              Sold
+            </Link>
+          ) : (
+            <p className="font-semibold text-red-600">Out of stock</p>
+          )}
 
           <div className="flex flex-wrap gap-4 text-sm">
             <Link
@@ -123,7 +112,7 @@ export default async function ItemPage({
               Edit this item
             </Link>
             <Link href="/sales" className="text-gold-dark hover:underline">
-              Sales list
+              Sold list
             </Link>
           </div>
         </div>

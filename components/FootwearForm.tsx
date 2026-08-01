@@ -211,7 +211,7 @@ export default function FootwearForm({ item }: { item?: ExistingItem }) {
 
       <div>
         <p className={label}>Stock by size (leave 0 if not stocked)</p>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {SIZES.map((size) => (
             <label key={size} className="flex flex-col items-center gap-1">
               <span className="text-sm font-semibold text-ink">{size}</span>
@@ -220,7 +220,7 @@ export default function FootwearForm({ item }: { item?: ExistingItem }) {
                 type="number"
                 min={0}
                 defaultValue={qty.get(size) ?? 0}
-                className="w-16 rounded-md border border-cream-dark bg-card px-2 py-1.5 text-center text-ink outline-none focus:border-gold focus:ring-2 focus:ring-gold/30"
+                className="w-14 rounded-md border border-cream-dark bg-card px-2 py-1.5 text-center text-ink outline-none focus:border-gold focus:ring-2 focus:ring-gold/30"
               />
             </label>
           ))}

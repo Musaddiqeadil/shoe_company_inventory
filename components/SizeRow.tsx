@@ -1,6 +1,6 @@
 import { SIZES, sizeMap } from "@/lib/constants";
 
-// Displays sizes 6–11 with their stock. Out-of-stock (qty 0) sizes are greyed
+// Displays every size with its stock. Out-of-stock (qty 0) sizes are greyed
 // and labelled "out"; available sizes show the quantity.
 export default function SizeRow({
   sizes,
@@ -9,7 +9,9 @@ export default function SizeRow({
 }) {
   const map = sizeMap(sizes);
   return (
-    <div className="flex flex-wrap gap-2">
+    // Twelve sizes now, so the boxes are kept narrow enough to sit six to a
+    // row on a phone.
+    <div className="flex flex-wrap gap-1.5">
       {SIZES.map((size) => {
         const qty = map.get(size) ?? 0;
         const inStock = qty > 0;
@@ -17,7 +19,7 @@ export default function SizeRow({
           <div
             key={size}
             className={
-              "flex w-14 flex-col items-center rounded-md border py-1.5 text-center " +
+              "flex w-12 flex-col items-center rounded-md border py-1.5 text-center " +
               (inStock
                 ? "border-gold/60 bg-card"
                 : "border-cream-dark bg-cream-dark/40 text-ink-soft")

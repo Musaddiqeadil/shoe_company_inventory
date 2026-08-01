@@ -31,9 +31,9 @@ model Footwear {
   updatedAt    DateTime    @updatedAt
 }
 
-// Embedded document: one size (6–11) and its stock quantity.
+// Embedded document: one size (1–12) and its stock quantity.
 type SizeStock {
-  size     Int // 6, 7, 8, 9, 10, 11
+  size     Int // 1 … 12 — kids' sizes start at 1
   quantity Int
 }
 
@@ -41,21 +41,24 @@ type SizeStock {
 // size by the quantity sold (see app/sales/actions.ts).
 //
 // The item details (code, serial, name, size) are copied onto the sale so the
-// history still reads correctly if the shoe is later renamed or deleted.
+// history still reads correctly if the shoe is later renamed or deleted. So is
+// costPrice — the monthly profit has to be worked out from what the shop paid
+// at the time, not from whatever the cost happens to be today.
 model Sale {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  customerName  String? // who bought it — blank for a quick counter sale
-  customerPhone String? // their contact number
-  footwearId    String   @db.ObjectId
-  footwear      Footwear @relation(fields: [footwearId], references: [id])
-  code          String // snapshot of the shoe's lookup code, e.g. "SPT-115"
-  serial        Int? // snapshot of the shoe's S-number
-  itemName      String // snapshot of the shoe's name
-  size          Int // the size that was sold (and reduced from stock)
-  quantity      Int // pairs sold
-  unitPrice     Int // price per pair actually charged, whole rupees
-  total         Int // unitPrice * quantity
-  note          String? // optional remark
-  soldAt        DateTime @default(now()) // the day of the sale, chosen on the form
-  createdAt     DateTime @default(now()) // when it was entered into the system
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  footwearId String   @db.ObjectId
+  footwear   Footwear @relation(fields: [footwearId], references: [id])
+  code       String // snapshot of the shoe's lookup code, e.g. "SPT-115"
+  serial     Int? // snapshot of the shoe's S-number
+  itemName   String // snapshot of the shoe's name
+  imageUrl   String? // snapshot of the photo, so the list still shows it later
+  size       Int // the size that was sold (and reduced from stock)
+  quantity   Int // pairs sold
+  listPrice  Int? // what the shoe was listed at, copied at the time of sale
+  unitPrice  Int // price per pair actually charged, whole rupees
+  total      Int // unitPrice * quantity
+  costPrice  Int? // what the shop paid per pair, copied at the time of sale
+  note       String? // optional remark
+  soldAt     DateTime @default(now()) // the day of the sale, chosen on the form
+  createdAt  DateTime @default(now()) // when it was entered into the system
 }

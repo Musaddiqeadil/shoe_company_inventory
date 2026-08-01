@@ -25,9 +25,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Brand wordmark styling */
-.wordmark {
-  font-family: var(--font-serif);
-  letter-spacing: 0.18em;
-  font-weight: 700;
+/* Brand wordmark styling. Inside @layer so utilities still win over it —
+   the header tightens the letter-spacing on small phones with tracking-*. */
+@layer components {
+  .wordmark {
+    font-family: var(--font-serif);
+    letter-spacing: 0.18em;
+    font-weight: 700;
+  }
 }
