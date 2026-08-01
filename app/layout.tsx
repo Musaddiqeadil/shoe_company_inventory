@@ -51,12 +51,20 @@ function SiteHeader() {
             COMPANY
           </span>
         </Link>
-        <Link
-          href="/admin"
-          className="text-sm text-cream/80 hover:text-gold transition-colors"
-        >
-          Manage stock
-        </Link>
+        <nav className="flex items-center gap-4 sm:gap-5">
+          <Link
+            href="/sales"
+            className="text-sm text-cream/80 hover:text-gold transition-colors"
+          >
+            Sales
+          </Link>
+          <Link
+            href="/admin"
+            className="text-sm text-cream/80 hover:text-gold transition-colors"
+          >
+            Manage stock
+          </Link>
+        </nav>
       </div>
     </header>
   );

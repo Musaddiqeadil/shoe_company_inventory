@@ -26,6 +26,7 @@ model Footwear {
   imageUrl         String? // link to the photo (stored in cloud, not in the DB)
   description  String? // optional
   sizes        SizeStock[] // embedded stock-per-size list
+  sales        Sale[] // every sale made of this shoe
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -34,4 +35,27 @@ model Footwear {
 type SizeStock {
   size     Int // 6, 7, 8, 9, 10, 11
   quantity Int
+}
+
+// One document per sale. Recording a sale reduces the stock of that shoe's
+// size by the quantity sold (see app/sales/actions.ts).
+//
+// The item details (code, serial, name, size) are copied onto the sale so the
+// history still reads correctly if the shoe is later renamed or deleted.
+model Sale {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerName  String? // who bought it — blank for a quick counter sale
+  customerPhone String? // their contact number
+  footwearId    String   @db.ObjectId
+  footwear      Footwear @relation(fields: [footwearId], references: [id])
+  code          String // snapshot of the shoe's lookup code, e.g. "SPT-115"
+  serial        Int? // snapshot of the shoe's S-number
+  itemName      String // snapshot of the shoe's name
+  size          Int // the size that was sold (and reduced from stock)
+  quantity      Int // pairs sold
+  unitPrice     Int // price per pair actually charged, whole rupees
+  total         Int // unitPrice * quantity
+  note          String? // optional remark
+  soldAt        DateTime @default(now()) // the day of the sale, chosen on the form
+  createdAt     DateTime @default(now()) // when it was entered into the system
 }

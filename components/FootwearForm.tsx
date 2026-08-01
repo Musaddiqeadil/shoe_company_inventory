@@ -1,6 +1,15 @@
-import { saveFootwear } from "@/app/admin/actions";
+"use client";
+
+import { useActionState, useState } from "react";
+import { saveFootwear, type SaveState } from "@/app/admin/actions";
 import ImageUpload from "@/components/ImageUpload";
-import { CATEGORIES, GENDER_GROUPS, SIZES, sizeMap } from "@/lib/constants";
+import {
+  CATEGORIES,
+  GENDER_GROUPS,
+  SIZES,
+  normalizeCode,
+  sizeMap,
+} from "@/lib/constants";
 
 type ExistingItem = {
   code: string;
@@ -18,13 +27,50 @@ type ExistingItem = {
 // Shared add/edit form. When `item` is provided the fields are pre-filled and
 // the code is locked (you edit the same item rather than creating a new one).
 export default function FootwearForm({ item }: { item?: ExistingItem }) {
+  const [state, formAction, pending] = useActionState<SaveState, FormData>(
+    saveFootwear,
+    null
+  );
+  // Warning shown while typing if the code already belongs to another shoe.
+  const [codeTaken, setCodeTaken] = useState("");
+
   const qty = sizeMap(item?.sizes ?? []);
   const label = "block text-sm font-medium text-ink mb-1";
   const field =
     "w-full rounded-lg border border-cream-dark bg-card px-3 py-2 text-ink outline-none focus:border-gold focus:ring-2 focus:ring-gold/30";
 
+  // On the add form only: check the typed code against what's already stored,
+  // so a clash is visible before anything is saved.
+  async function checkCode(value: string) {
+    const code = normalizeCode(value);
+    if (item || !code) {
+      setCodeTaken("");
+      return;
+    }
+    try {
+      const res = await fetch(
+        `/api/footwear/lookup?code=${encodeURIComponent(code)}`
+      );
+      if (!res.ok) {
+        setCodeTaken("");
+        return;
+      }
+      const { item: clash } = await res.json();
+      setCodeTaken(
+        `Code ${code} already belongs to “${clash.name}”` +
+          (clash.serial != null ? ` (S${clash.serial}, ${clash.category})` : "") +
+          ". Use a different code."
+      );
+    } catch {
+      setCodeTaken("");
+    }
+  }
+
   return (
-    <form action={saveFootwear} className="space-y-5">
+    <form action={formAction} className="space-y-5">
+      {/* Tells the action to update THIS shoe rather than create a new one. */}
+      {item && <input type="hidden" name="originalCode" value={item.code} />}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label} htmlFor="code">
@@ -36,9 +82,17 @@ export default function FootwearForm({ item }: { item?: ExistingItem }) {
             required
             defaultValue={item?.code}
             readOnly={!!item}
+            onBlur={(e) => checkCode(e.target.value)}
             placeholder="e.g. SPT-115"
-            className={field + (item ? " bg-cream-dark/40" : "")}
+            className={
+              field +
+              (item ? " bg-cream-dark/40" : "") +
+              (codeTaken ? " border-red-500" : "")
+            }
           />
+          {codeTaken && (
+            <p className="mt-1 text-sm text-red-600">{codeTaken}</p>
+          )}
         </div>
         <div>
           <label className={label} htmlFor="name">
@@ -173,12 +227,19 @@ export default function FootwearForm({ item }: { item?: ExistingItem }) {
         </div>
       </div>
 
+      {state?.error && (
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+          {state.error}
+        </p>
+      )}
+
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          className="rounded-lg bg-gold px-6 py-2.5 font-semibold text-ink hover:bg-gold-dark"
+          disabled={pending}
+          className="rounded-lg bg-gold px-6 py-2.5 font-semibold text-ink hover:bg-gold-dark disabled:opacity-50"
         >
-          {item ? "Save changes" : "Add footwear"}
+          {pending ? "Saving…" : item ? "Save changes" : "Add footwear"}
         </button>
       </div>
     </form>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FootwearImage from "@/components/FootwearImage";
 import SizeRow from "@/components/SizeRow";
+import SellPanel from "@/components/SellPanel";
 import { getFootwearByCode } from "@/lib/data";
 import { categorySlug, formatPrice, normalizeCode, totalStock } from "@/lib/constants";
 
@@ -108,12 +109,23 @@ export default async function ItemPage({
             <SizeRow sizes={item.sizes} />
           </div>
 
-          <Link
-            href={`/admin/${encodeURIComponent(item.code)}/edit`}
-            className="inline-block text-sm text-gold-dark hover:underline"
-          >
-            Edit this item
-          </Link>
+          <SellPanel
+            code={item.code}
+            sellingPrice={item.sellingPrice}
+            sizes={item.sizes}
+          />
+
+          <div className="flex flex-wrap gap-4 text-sm">
+            <Link
+              href={`/admin/${encodeURIComponent(item.code)}/edit`}
+              className="text-gold-dark hover:underline"
+            >
+              Edit this item
+            </Link>
+            <Link href="/sales" className="text-gold-dark hover:underline">
+              Sales list
+            </Link>
+          </div>
         </div>
       </div>
     </div>

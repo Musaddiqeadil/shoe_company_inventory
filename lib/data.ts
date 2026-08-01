@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { normalizeCode } from "@/lib/constants";
+import { normalizeCode, parseShoeId } from "@/lib/constants";
 
 // Look up one footwear item by its code. Sizes are embedded in the document,
 // so they come back automatically. Returns null if no item has that code.
@@ -21,5 +21,23 @@ export async function getFootwearByCategory(category: string) {
 export async function getAllFootwear() {
   return prisma.footwear.findMany({
     orderBy: { createdAt: "desc" },
+  });
+}
+
+// Look up one shoe by whatever ID the shopkeeper typed on the sales page —
+// either the code ("SPT-115") or the serial number ("S12" / "12").
+export async function getFootwearByAnyId(input: string) {
+  const id = parseShoeId(input);
+  if (id.kind === "serial") {
+    return prisma.footwear.findUnique({ where: { serial: id.serial } });
+  }
+  return prisma.footwear.findUnique({ where: { code: normalizeCode(id.code) } });
+}
+
+// Sale history, newest sale date first (ties broken by when it was entered).
+export async function getAllSales(limit = 100) {
+  return prisma.sale.findMany({
+    orderBy: [{ soldAt: "desc" }, { createdAt: "desc" }],
+    take: limit,
   });
 }

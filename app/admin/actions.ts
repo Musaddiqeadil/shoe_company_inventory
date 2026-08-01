@@ -18,10 +18,19 @@ function toIntOrNull(value: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-// Create a new footwear item or update an existing one (matched by code).
-// Sizes are stored as an embedded list on the document. Called from the add
-// and edit forms.
-export async function saveFootwear(formData: FormData) {
+// What the add/edit form shows when a save is refused.
+export type SaveState = { error: string } | null;
+
+// Create a new footwear item, or update the one being edited.
+//
+// The edit form sends `originalCode` — that is what says "update this exact
+// item". Without it this is a brand-new shoe, and a code already in use is
+// REFUSED rather than written over: an add must never overwrite another shoe.
+export async function saveFootwear(
+  _prev: SaveState,
+  formData: FormData
+): Promise<SaveState> {
+  const originalCode = normalizeCode(String(formData.get("originalCode") ?? ""));
   const code = normalizeCode(String(formData.get("code") ?? ""));
   const name = String(formData.get("name") ?? "").trim();
   const category = String(formData.get("category") ?? "").trim();
@@ -32,10 +41,10 @@ export async function saveFootwear(formData: FormData) {
   const purchasePrice = toIntOrNull(formData.get("purchasePrice"));
   const lastSellingPrice = toIntOrNull(formData.get("lastSellingPrice"));
 
-  if (!code) throw new Error("Code is required.");
-  if (!name) throw new Error("Name is required.");
+  if (!code) return { error: "Code is required." };
+  if (!name) return { error: "Name is required." };
   if (!CATEGORIES.includes(category as (typeof CATEGORIES)[number])) {
-    throw new Error("Please choose a valid category.");
+    return { error: "Please choose a valid category." };
   }
 
   // Keep only sizes with a quantity above zero.
@@ -56,18 +65,40 @@ export async function saveFootwear(formData: FormData) {
     sizes,
   };
 
-  // Next sequential number (S1, S2, …) — only assigned to brand-new shoes.
-  const highest = await prisma.footwear.findFirst({
-    orderBy: { serial: "desc" },
-    select: { serial: true },
-  });
-  const nextSerial = (highest?.serial ?? 0) + 1;
+  if (originalCode) {
+    // Editing: update that exact shoe. The code itself is never changed here,
+    // so this can't land on a different shoe's document.
+    const existing = await prisma.footwear.findUnique({
+      where: { code: originalCode },
+    });
+    if (!existing) {
+      return { error: `${originalCode} no longer exists — it may have been deleted.` };
+    }
+    await prisma.footwear.update({ where: { code: originalCode }, data });
+  } else {
+    // Adding: a code already in use belongs to another shoe. Stop, and say
+    // which one, instead of writing over it.
+    const clash = await prisma.footwear.findUnique({ where: { code } });
+    if (clash) {
+      return {
+        error:
+          `Code ${code} is already used by "${clash.name}"` +
+          (clash.serial != null ? ` (S${clash.serial}, ${clash.category})` : "") +
+          `. Give this shoe a different code, or edit that item instead.`,
+      };
+    }
 
-  await prisma.footwear.upsert({
-    where: { code },
-    update: data, // editing keeps the existing serial
-    create: { code, serial: nextSerial, ...data },
-  });
+    // Next sequential number (S1, S2, …) — only assigned to brand-new shoes.
+    const highest = await prisma.footwear.findFirst({
+      orderBy: { serial: "desc" },
+      select: { serial: true },
+    });
+    const nextSerial = (highest?.serial ?? 0) + 1;
+
+    await prisma.footwear.create({
+      data: { code, serial: nextSerial, ...data },
+    });
+  }
 
   revalidatePath("/admin");
   revalidatePath(`/item/${code}`);
