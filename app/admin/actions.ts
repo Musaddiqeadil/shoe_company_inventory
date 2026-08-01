@@ -56,10 +56,17 @@ export async function saveFootwear(formData: FormData) {
     sizes,
   };
 
+  // Next sequential number (S1, S2, …) — only assigned to brand-new shoes.
+  const highest = await prisma.footwear.findFirst({
+    orderBy: { serial: "desc" },
+    select: { serial: true },
+  });
+  const nextSerial = (highest?.serial ?? 0) + 1;
+
   await prisma.footwear.upsert({
     where: { code },
-    update: data,
-    create: { code, ...data },
+    update: data, // editing keeps the existing serial
+    create: { code, serial: nextSerial, ...data },
   });
 
   revalidatePath("/admin");

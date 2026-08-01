@@ -15,6 +15,7 @@ datasource db {
 // and its stock live together and are deleted together.
 model Footwear {
   id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  serial       Int?        @unique // sequential number shown as S1, S2, … (auto-assigned)
   code         String      @unique // e.g. "SPT-115" — the lookup key
   name         String
   category         String // Ladies | Gents | Slipper | Chappal | Formal | Casual | Sports

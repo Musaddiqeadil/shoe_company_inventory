@@ -50,6 +50,7 @@ export default async function ItemPage({
         <div className="space-y-4">
           <div>
             <p className="text-sm uppercase tracking-wide text-gold-dark">
+              {item.serial != null ? `S${item.serial} · ` : ""}
               {item.code}
             </p>
             <h1 className="mt-1 text-2xl font-bold text-ink">{item.name}</h1>

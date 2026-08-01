@@ -49,6 +49,7 @@ export default async function AdminPage() {
                         {item.name}
                       </p>
                       <p className="text-xs text-gold-dark">
+                        {item.serial != null ? `S${item.serial} · ` : ""}
                         {item.code} · {item.category}
                       </p>
                       <p className="text-sm text-ink">
@@ -80,6 +81,7 @@ export default async function AdminPage() {
             <table className="w-full text-left text-sm">
             <thead className="bg-cream-dark/50 text-ink">
               <tr>
+                <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Item</th>
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Category</th>
@@ -97,6 +99,9 @@ export default async function AdminPage() {
                     key={item.code}
                     className="border-t border-cream-dark/70"
                   >
+                    <td className="px-4 py-3 font-medium text-ink-soft">
+                      {item.serial != null ? `S${item.serial}` : "—"}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <FootwearImage
