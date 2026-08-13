@@ -3,14 +3,15 @@ import { notFound } from "next/navigation";
 import FootwearForm from "@/components/FootwearForm";
 import { deleteFootwear } from "@/app/admin/actions";
 import { getFootwearByCode } from "@/lib/data";
+import { decodeCodeParam } from "@/lib/constants";
 
 export default async function EditFootwearPage({
   params,
 }: {
   params: Promise<{ code: string }>;
 }) {
-  const { code } = await params;
-  const item = await getFootwearByCode(code);
+  const { code: rawCode } = await params;
+  const item = await getFootwearByCode(decodeCodeParam(rawCode));
   if (!item) notFound();
 
   return (

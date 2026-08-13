@@ -101,7 +101,7 @@ export async function saveFootwear(
   }
 
   revalidatePath("/admin");
-  revalidatePath(`/item/${code}`);
+  revalidatePath(`/item/${encodeURIComponent(code)}`);
   revalidatePath(`/category/${categorySlug(category)}`);
   redirect(`/item/${encodeURIComponent(code)}`);
 }

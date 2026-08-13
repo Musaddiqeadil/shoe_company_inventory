@@ -2,14 +2,21 @@ import Link from "next/link";
 import CostReveal from "@/components/CostReveal";
 import SizeRow from "@/components/SizeRow";
 import { getFootwearByCode } from "@/lib/data";
-import { categorySlug, formatPrice, normalizeCode, totalStock } from "@/lib/constants";
+import {
+  categorySlug,
+  decodeCodeParam,
+  formatPrice,
+  normalizeCode,
+  totalStock,
+} from "@/lib/constants";
 
 export default async function ItemPage({
   params,
 }: {
   params: Promise<{ code: string }>;
 }) {
-  const { code } = await params;
+  const { code: rawCode } = await params;
+  const code = decodeCodeParam(rawCode);
   const item = await getFootwearByCode(code);
 
   if (!item) {

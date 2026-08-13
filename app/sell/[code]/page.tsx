@@ -2,7 +2,12 @@ import Link from "next/link";
 import FootwearImage from "@/components/FootwearImage";
 import SellForm from "@/components/SellForm";
 import { getFootwearByAnyId } from "@/lib/data";
-import { formatPrice, normalizeCode, shoeLabel } from "@/lib/constants";
+import {
+  decodeCodeParam,
+  formatPrice,
+  normalizeCode,
+  shoeLabel,
+} from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +18,8 @@ export default async function SellPage({
 }: {
   params: Promise<{ code: string }>;
 }) {
-  const { code } = await params;
+  const { code: rawCode } = await params;
+  const code = decodeCodeParam(rawCode);
   const item = await getFootwearByAnyId(code);
 
   if (!item) {

@@ -80,7 +80,7 @@ export async function sellFootwear(
   revalidatePath("/sales/monthly");
   revalidatePath("/admin");
   revalidatePath("/");
-  revalidatePath(`/item/${item.code}`);
+  revalidatePath(`/item/${encodeURIComponent(item.code)}`);
   revalidatePath(`/category/${categorySlug(item.category)}`);
 
   // redirect() throws to unwind, so it has to be the last thing here.

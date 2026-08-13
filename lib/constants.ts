@@ -41,6 +41,18 @@ export function normalizeCode(code: string) {
   return code.trim().toUpperCase();
 }
 
+// A code sitting in a URL path arrives percent-encoded — a code with a space
+// in it, like "SP 9", reaches the page as "SP%209". Decode it before looking
+// it up, or that shoe can never be opened. Falls back to the raw text if the
+// URL was malformed, so a bad link shows "not found" instead of crashing.
+export function decodeCodeParam(param: string) {
+  try {
+    return decodeURIComponent(param);
+  } catch {
+    return param;
+  }
+}
+
 // Total quantity in stock across every size of an item.
 export function totalStock(sizes: { quantity: number }[]) {
   return sizes.reduce((sum, s) => sum + s.quantity, 0);
