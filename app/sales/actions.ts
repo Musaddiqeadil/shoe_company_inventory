@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getFootwearByAnyId } from "@/lib/data";
-import { categorySlug, parseSaleDate } from "@/lib/constants";
+import { SIZES, categorySlug, parseSaleDate } from "@/lib/constants";
 
 // What the sell form shows when a sale is refused.
 export type SellState = { error: string } | null;
@@ -87,41 +87,123 @@ export async function sellFootwear(
   redirect("/sales");
 }
 
-export type SaleCostResult =
-  | { error: string }
-  | { costPrice: number; cost: number; profit: number };
+// What the edit form sends back. Prices that may legitimately be blank come as
+// null; the date is the "2026-08-04" an <input type="date"> produces.
+export type SaleEdit = {
+  soldAt: string;
+  size: number;
+  quantity: number;
+  listPrice: number | null;
+  unitPrice: number;
+  costPrice: number | null;
+};
 
-// Correct the purchase price recorded against a sale that has already been
-// made. This is for a wrong number, not a changed one: a sale deliberately
-// keeps the cost as it stood on the day (see costPrice above), so re-pricing a
-// shoe today must never reach back into last month's profit. But a typo typed
-// into the stock form gets copied onto every sale made before it was noticed,
-// and until now there was no way to put that right.
+export type SaleEditResult =
+  | { error: string }
+  | { costPrice: number | null; profit: number | null };
+
+// Whole rupees only, and never negative. Blank is allowed for the prices that
+// are optional on a sale, which is what null means here.
+function badMoney(value: number | null) {
+  return value != null && (!Number.isInteger(value) || value < 0);
+}
+
+// Correct a sale that has already been recorded — wrong day, wrong size, wrong
+// price, wrong purchase price. This is for putting a mistake right, not for
+// re-pricing: a sale deliberately keeps its own copy of the prices as they
+// stood on the day (see the create above), so editing a shoe today must never
+// reach back into last month's profit. A number typed wrong at the till is a
+// different matter, and until now there was no way to fix one.
 //
-// Only the sale is touched. The shoe's own purchase price is edited where it
-// always was, on the stock form.
-export async function updateSaleCost(
+// Which shoe was sold cannot be changed here. That is not a correction, it is
+// a different sale — delete this one and record it again.
+export async function updateSale(
   saleId: string,
-  costPrice: number
-): Promise<SaleCostResult> {
+  edit: SaleEdit
+): Promise<SaleEditResult> {
   if (!saleId.trim()) return { error: "Which sale is this?" };
-  if (!Number.isInteger(costPrice) || costPrice < 0) {
-    return { error: "Enter the cost in whole rupees." };
+
+  const { size, quantity, unitPrice, listPrice, costPrice } = edit;
+
+  if (!SIZES.includes(size as (typeof SIZES)[number])) {
+    return { error: "Choose the size that was sold." };
+  }
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    return { error: "Pairs sold must be at least 1." };
+  }
+  if (badMoney(unitPrice)) return { error: "Sold price must be whole rupees." };
+  if (badMoney(listPrice)) {
+    return { error: "Selling price must be whole rupees." };
+  }
+  if (badMoney(costPrice)) {
+    return { error: "Purchase price must be whole rupees." };
   }
 
   const sale = await prisma.sale.findUnique({ where: { id: saleId } });
   if (!sale) return { error: "That sale is no longer there." };
 
-  const updated = await prisma.sale.update({
-    where: { id: sale.id },
-    data: { costPrice },
+  // Stock has to follow the correction, or the shelf count drifts away from
+  // reality. The pairs this sale originally took go back on first, then the
+  // corrected pairs come off — so changing "size 9" to "size 8" returns the
+  // pair to 9 and takes one from 8, and the same-size case still works out.
+  //
+  // A shoe that has since been deleted has no stock left to put right, so the
+  // sale is simply corrected on its own.
+  const item = await prisma.footwear.findUnique({
+    where: { id: sale.footwearId },
   });
 
-  // The sold list shows no cost of its own, so it does not need rebuilding —
-  // and leaving it alone keeps the row from re-rendering under the form. The
-  // monthly page does count how many sales are missing a purchase price.
-  revalidatePath("/sales/monthly");
+  if (item && (sale.size !== size || sale.quantity !== quantity)) {
+    const stock = new Map(item.sizes.map((s) => [s.size, s.quantity]));
+    stock.set(sale.size, (stock.get(sale.size) ?? 0) + sale.quantity);
 
-  const cost = costPrice * updated.quantity;
-  return { costPrice, cost, profit: updated.total - cost };
+    const available = stock.get(size) ?? 0;
+    if (available < quantity) {
+      return {
+        error:
+          available === 0
+            ? `Size ${size} is out of stock.`
+            : `Only ${available} left in size ${size}.`,
+      };
+    }
+    stock.set(size, available - quantity);
+
+    await prisma.footwear.update({
+      where: { id: item.id },
+      data: {
+        sizes: [...stock.entries()]
+          .filter(([, q]) => q > 0)
+          .map(([s, q]) => ({ size: s, quantity: q }))
+          .sort((a, b) => a.size - b.size),
+      },
+    });
+  }
+
+  const updated = await prisma.sale.update({
+    where: { id: sale.id },
+    data: {
+      soldAt: parseSaleDate(edit.soldAt),
+      size,
+      quantity,
+      listPrice,
+      unitPrice,
+      total: unitPrice * quantity,
+      costPrice,
+    },
+  });
+
+  revalidatePath("/sales");
+  revalidatePath("/sales/monthly");
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath(`/item/${encodeURIComponent(sale.code)}`);
+  if (item) revalidatePath(`/category/${categorySlug(item.category)}`);
+
+  return {
+    costPrice: updated.costPrice,
+    profit:
+      updated.costPrice == null
+        ? null
+        : updated.total - updated.costPrice * updated.quantity,
+  };
 }

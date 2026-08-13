@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import FootwearImage from "@/components/FootwearImage";
-import { updateSaleCost } from "@/app/sales/actions";
-import { formatPrice, formatSaleDate, shoeLabel } from "@/lib/constants";
+import { updateSale } from "@/app/sales/actions";
+import {
+  SIZES,
+  formatPrice,
+  formatSaleDate,
+  saleDayKey,
+  shoeLabel,
+} from "@/lib/constants";
 import { useSecretReveal } from "@/lib/useSecretReveal";
 
 export type SoldRow = {
@@ -48,122 +54,271 @@ function useSaleProfit(id: string) {
   });
 }
 
-// The profit badge, and behind it the way to put a wrong purchase price right.
-// A sale keeps the cost as it stood on the day it was made, so correcting the
-// shoe's price later leaves old sales reading the old number — which is what
-// you want for a real price change and not at all what you want for a typo.
+// The profit badge, and behind it the way into the correction form. Everything
+// to do with cost stays behind the seven taps, so the whole form does too.
 function ProfitBadge({
-  saleId,
+  sale,
   revealed,
   hold,
   release,
 }: {
-  saleId: string;
+  sale: SoldRow;
   revealed: Revealed;
   hold: () => void;
   release: (value?: Revealed) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Every tap in here is meant for the form, not for the row underneath it,
   // which is counting taps and would hide the panel mid-edit.
   const keep = (e: React.SyntheticEvent) => e.stopPropagation();
 
-  function startEditing(e: React.MouseEvent) {
-    keep(e);
-    hold();
-    setValue(revealed.costPrice != null ? String(revealed.costPrice) : "");
+  return (
+    <>
+      <span className="mt-1 inline-flex items-center gap-2 rounded-md bg-ink px-2 py-0.5 text-xs font-semibold text-gold">
+        {revealed.profit != null
+          ? `Profit ${formatPrice(revealed.profit)}`
+          : "No cost recorded"}
+        <button
+          type="button"
+          onClick={(e) => {
+            keep(e);
+            hold();
+            setEditing(true);
+          }}
+          className="font-normal text-cream underline underline-offset-2"
+        >
+          Edit sale
+        </button>
+      </span>
+
+      {editing && (
+        <EditSaleDialog
+          sale={sale}
+          costPrice={revealed.costPrice}
+          onClose={() => {
+            setEditing(false);
+            release();
+          }}
+          onSaved={(value) => {
+            setEditing(false);
+            release(value);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+const fieldClass =
+  "w-full rounded-lg border border-cream-dark bg-card px-3 py-2 text-ink outline-none focus:border-gold focus:ring-2 focus:ring-gold/30";
+const labelClass = "block text-sm font-medium text-ink mb-1";
+
+// Correcting a recorded sale: the day, the size, the pairs, and the three
+// prices. Six fields will not fit under a table row on a phone, so it opens
+// over the page instead.
+//
+// Which shoe was sold is deliberately not editable — see updateSale.
+function EditSaleDialog({
+  sale,
+  costPrice,
+  onClose,
+  onSaved,
+}: {
+  sale: SoldRow;
+  costPrice: number | null;
+  onClose: () => void;
+  onSaved: (value: Revealed) => void;
+}) {
+  const money = (n: number | null) => (n != null ? String(n) : "");
+
+  const [soldAt, setSoldAt] = useState(saleDayKey(sale.soldAt));
+  const [size, setSize] = useState(String(sale.size));
+  const [quantity, setQuantity] = useState(String(sale.quantity));
+  const [listPrice, setListPrice] = useState(money(sale.listPrice));
+  const [unitPrice, setUnitPrice] = useState(money(sale.unitPrice));
+  const [cost, setCost] = useState(money(costPrice));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const keep = (e: React.SyntheticEvent) => e.stopPropagation();
+
+  // What the sale will come to once saved, so the arithmetic is visible before
+  // committing to it rather than after.
+  const total = (Number(unitPrice) || 0) * (Number(quantity) || 0);
+
+  async function save() {
     setError(null);
-    setEditing(true);
-  }
-
-  function cancel(e: React.MouseEvent) {
-    keep(e);
-    setEditing(false);
-    release();
-  }
-
-  async function save(e: React.MouseEvent) {
-    keep(e);
-    const costPrice = Number(value.trim());
-    if (!Number.isInteger(costPrice) || costPrice < 0) {
-      setError("Whole rupees, 0 or more.");
-      return;
-    }
-
     setSaving(true);
-    const result = await updateSaleCost(saleId, costPrice);
+    const blankIsNull = (v: string) => (v.trim() === "" ? null : Number(v));
+    const result = await updateSale(sale.id, {
+      soldAt,
+      size: Number(size),
+      quantity: Number(quantity),
+      listPrice: blankIsNull(listPrice),
+      unitPrice: Number(unitPrice),
+      costPrice: blankIsNull(cost),
+    });
     setSaving(false);
 
     if ("error" in result) {
       setError(result.error);
       return;
     }
-
-    setEditing(false);
-    release({ costPrice: result.costPrice, profit: result.profit });
+    onSaved({ costPrice: result.costPrice, profit: result.profit });
   }
 
-  if (editing) {
-    return (
+  return (
+    <div
+      onClick={(e) => {
+        keep(e);
+        if (!saving) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-3 sm:items-center"
+    >
       <div
         onClick={keep}
-        className="mt-1 inline-block rounded-md border border-gold bg-card p-2 text-left shadow-sm"
+        className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-cream-dark bg-card p-5 text-left shadow-lg"
       >
-        <label className="block text-[11px] font-medium text-ink-soft">
-          Purchase price per pair (₹)
-        </label>
-        <div className="mt-1 flex items-center gap-1">
-          <input
-            type="number"
-            min={0}
-            step={1}
-            autoFocus
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-24 rounded border border-cream-dark bg-card px-2 py-1 text-sm text-ink outline-none focus:border-gold"
-          />
+        <h2 className="text-lg font-bold text-ink">Correct this sale</h2>
+        <p className="mt-0.5 text-sm text-gold-dark">
+          {sale.itemName} · {shoeLabel(sale.serial, sale.code)}
+        </p>
+
+        <div className="mt-4 space-y-4">
+          <div>
+            <label className={labelClass} htmlFor={`soldAt-${sale.id}`}>
+              Date of sale
+            </label>
+            <input
+              id={`soldAt-${sale.id}`}
+              type="date"
+              value={soldAt}
+              onChange={(e) => setSoldAt(e.target.value)}
+              className={fieldClass}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass} htmlFor={`size-${sale.id}`}>
+                Size sold
+              </label>
+              <select
+                id={`size-${sale.id}`}
+                value={size}
+                onChange={(e) => setSize(e.target.value)}
+                className={fieldClass}
+              >
+                {SIZES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass} htmlFor={`qty-${sale.id}`}>
+                Pairs
+              </label>
+              <input
+                id={`qty-${sale.id}`}
+                type="number"
+                min={1}
+                step={1}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass} htmlFor={`list-${sale.id}`}>
+                Selling price (₹)
+              </label>
+              <input
+                id={`list-${sale.id}`}
+                type="number"
+                min={0}
+                step={1}
+                value={listPrice}
+                onChange={(e) => setListPrice(e.target.value)}
+                className={fieldClass}
+              />
+              <p className="mt-1 text-xs text-ink-soft">What it was listed at.</p>
+            </div>
+            <div>
+              <label className={labelClass} htmlFor={`unit-${sale.id}`}>
+                Sold price (₹)
+              </label>
+              <input
+                id={`unit-${sale.id}`}
+                type="number"
+                min={0}
+                step={1}
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+                className={fieldClass}
+              />
+              <p className="mt-1 text-xs text-ink-soft">Per pair, charged.</p>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor={`cost-${sale.id}`}>
+              Purchase price (₹)
+            </label>
+            <input
+              id={`cost-${sale.id}`}
+              type="number"
+              min={0}
+              step={1}
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+              className={fieldClass}
+            />
+            <p className="mt-1 text-xs text-ink-soft">
+              Per pair, what the shop paid. Leave blank if not known.
+            </p>
+          </div>
+
+          <p className="rounded-lg bg-cream-dark/40 px-3 py-2 text-sm text-ink">
+            Total <span className="font-semibold">{formatPrice(total)}</span>
+          </p>
+
+          <p className="text-xs text-ink-soft">
+            Changing the size or the pairs moves the stock to match.
+          </p>
+
+          {error && (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-5 flex gap-3">
           <button
             type="button"
             onClick={save}
             disabled={saving}
-            className="rounded bg-ink px-2 py-1 text-xs font-semibold text-gold disabled:opacity-50"
+            className="flex-1 rounded-lg bg-gold px-4 py-2.5 font-semibold text-ink hover:bg-gold-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? "Saving…" : "Save changes"}
           </button>
           <button
             type="button"
-            onClick={cancel}
+            onClick={onClose}
             disabled={saving}
-            className="rounded px-2 py-1 text-xs text-ink-soft hover:underline disabled:opacity-50"
+            className="rounded-lg border border-cream-dark px-4 py-2.5 font-medium text-ink-soft hover:border-gold disabled:opacity-50"
           >
             Cancel
           </button>
         </div>
-        {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
-        <p className="mt-1 text-[11px] text-ink-soft">
-          Corrects this sale only.
-        </p>
       </div>
-    );
-  }
-
-  return (
-    <span className="mt-1 inline-flex items-center gap-2 rounded-md bg-ink px-2 py-0.5 text-xs font-semibold text-gold">
-      {revealed.profit != null
-        ? `Profit ${formatPrice(revealed.profit)}`
-        : "No cost recorded"}
-      <button
-        type="button"
-        onClick={startEditing}
-        className="font-normal text-cream underline underline-offset-2"
-      >
-        {revealed.costPrice != null ? "Edit cost" : "Add cost"}
-      </button>
-    </span>
+    </div>
   );
 }
 
@@ -244,7 +399,7 @@ function SoldTableRow({ sale: s }: { sale: SoldRow }) {
         {formatPrice(s.total)}
         {revealed && (
           <ProfitBadge
-            saleId={s.id}
+            sale={s}
             revealed={revealed}
             hold={hold}
             release={release}
@@ -292,7 +447,7 @@ function SoldCard({ sale: s }: { sale: SoldRow }) {
           {s.note && <p className="text-xs text-ink-soft">{s.note}</p>}
           {revealed && (
             <ProfitBadge
-              saleId={s.id}
+              sale={s}
               revealed={revealed}
               hold={hold}
               release={release}
