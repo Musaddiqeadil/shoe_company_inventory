@@ -19,6 +19,16 @@ export function useSecretReveal<T>(load: () => Promise<T>) {
   const lastTap = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  function stopCountdown() {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }
+
+  function startCountdown() {
+    stopCountdown();
+    timer.current = setTimeout(() => setRevealed(null), SHOW_FOR_MS);
+  }
+
   async function tap() {
     const now = Date.now();
     taps.current = now - lastTap.current > TAP_GAP_MS ? 1 : taps.current + 1;
@@ -29,9 +39,20 @@ export function useSecretReveal<T>(load: () => Promise<T>) {
 
     const value = await load();
     setRevealed(value);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setRevealed(null), SHOW_FOR_MS);
+    startCountdown();
   }
 
-  return { revealed, tap };
+  // Filling in a form takes longer than five seconds. `hold` keeps what is on
+  // screen there while that happens; `release` hands the countdown back, with
+  // an updated value if the form changed something.
+  function hold() {
+    stopCountdown();
+  }
+
+  function release(value?: T) {
+    if (value !== undefined) setRevealed(value);
+    startCountdown();
+  }
+
+  return { revealed, tap, hold, release };
 }

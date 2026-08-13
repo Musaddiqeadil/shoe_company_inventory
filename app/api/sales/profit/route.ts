@@ -12,9 +12,15 @@ export async function GET(request: Request) {
   if (!sale) return Response.json({ error: "Not found." }, { status: 404 });
 
   if (sale.costPrice == null) {
-    return Response.json({ cost: null, profit: null });
+    return Response.json({ costPrice: null, cost: null, profit: null });
   }
 
+  // costPrice is per pair — that is what gets edited when a wrong purchase
+  // price was recorded — while cost is what the whole sale cost.
   const cost = sale.costPrice * sale.quantity;
-  return Response.json({ cost, profit: sale.total - cost });
+  return Response.json({
+    costPrice: sale.costPrice,
+    cost,
+    profit: sale.total - cost,
+  });
 }

@@ -86,3 +86,42 @@ export async function sellFootwear(
   // redirect() throws to unwind, so it has to be the last thing here.
   redirect("/sales");
 }
+
+export type SaleCostResult =
+  | { error: string }
+  | { costPrice: number; cost: number; profit: number };
+
+// Correct the purchase price recorded against a sale that has already been
+// made. This is for a wrong number, not a changed one: a sale deliberately
+// keeps the cost as it stood on the day (see costPrice above), so re-pricing a
+// shoe today must never reach back into last month's profit. But a typo typed
+// into the stock form gets copied onto every sale made before it was noticed,
+// and until now there was no way to put that right.
+//
+// Only the sale is touched. The shoe's own purchase price is edited where it
+// always was, on the stock form.
+export async function updateSaleCost(
+  saleId: string,
+  costPrice: number
+): Promise<SaleCostResult> {
+  if (!saleId.trim()) return { error: "Which sale is this?" };
+  if (!Number.isInteger(costPrice) || costPrice < 0) {
+    return { error: "Enter the cost in whole rupees." };
+  }
+
+  const sale = await prisma.sale.findUnique({ where: { id: saleId } });
+  if (!sale) return { error: "That sale is no longer there." };
+
+  const updated = await prisma.sale.update({
+    where: { id: sale.id },
+    data: { costPrice },
+  });
+
+  // The sold list shows no cost of its own, so it does not need rebuilding —
+  // and leaving it alone keeps the row from re-rendering under the form. The
+  // monthly page does count how many sales are missing a purchase price.
+  revalidatePath("/sales/monthly");
+
+  const cost = costPrice * updated.quantity;
+  return { costPrice, cost, profit: updated.total - cost };
+}
